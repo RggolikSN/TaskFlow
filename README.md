@@ -10,7 +10,6 @@
 
 <img src="https://img.shields.io/badge/🎯-Глубокая%20кастомизация-FF6B6B" />
 <img src="https://img.shields.io/badge/🎨-Современный%20дизайн-4ECDC4" />
-<img src="https://img.shields.io/badge/🚀-Готовые%20компоненты-45B7D1" />
 
 </div>
 
