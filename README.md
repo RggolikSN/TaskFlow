@@ -7,7 +7,7 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-reference-orange.svg)
 ![For Beginners](https://img.shields.io/badge/for-beginners-green.svg)
-![Зайти на сайт](https://rggoliksn.github.io/TaskFlow/)
+[Зайти на сайт](https://rggoliksn.github.io/TaskFlow/)
 
 <img src="https://img.shields.io/badge/🎯-Глубокая%20кастомизация-FF6B6B" />
 <img src="https://img.shields.io/badge/🎨-Современный%20дизайн-4ECDC4" />
