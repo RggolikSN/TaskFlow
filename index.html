@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Менеджер задач</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- FlowCaptcha Protection -->
+    <div id="captchaOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:none;justify-content:center;align-items:center;z-index:10000;font-family:Arial,sans-serif;">
+        <div style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:30px;border-radius:15px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);min-width:320px;">
+            <h2 style="color:white;margin-bottom:20px;">FlowCaptcha</h2>
+            <div style="background:white;padding:15px;border-radius:10px;margin-bottom:15px;">
+                <canvas id="captchaCanvas" width="250" height="80" style="border:1px solid #ddd;border-radius:5px;"></canvas>
+            </div>
+            <input type="text" id="captchaInput" placeholder="Введите код с картинки" style="width:100%;padding:12px;border:none;border-radius:8px;margin-bottom:15px;text-align:center;font-size:16px;">
+            <div style="display:flex;gap:10px;">
+                <button type="button" onclick="checkCaptcha()" style="flex:1;padding:12px;background:#34C759;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Проверить</button>
+                <button type="button" onclick="generateCaptcha()" style="flex:1;padding:12px;background:#FF9500;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">Обновить</button>
+            </div>
+            <div id="captchaMessage" style="color:white;margin-top:10px;font-size:14px;min-height:20px;"></div>
+        </div>
+    </div>
+
+    <script>
+    // Капча система
+    let captchaCode = '';
+
+    // Проверяем, проходил ли пользователь капчу ранее
+    function checkCaptchaStatus() {
+        try {
+            const passed = localStorage.getItem('captchaPassed');
+            return passed === 'true';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function generateCaptcha() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let captcha = "";
+        for(let i = 0; i < 6; i++) {
+            captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        captchaCode = captcha;
+
+        const canvas = document.getElementById('captchaCanvas');
+        if (!canvas) {
+            console.error('Canvas not found');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+
+        // Очищаем canvas
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Добавляем шум - точки
+        ctx.fillStyle = '#e0e0e0';
+        for(let i = 0; i < 50; i++) {
+            ctx.beginPath();
+            ctx.arc(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height,
+                Math.random() * 1.5,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+
+        // Добавляем линии-помехи
+        for(let i = 0; i < 3; i++) {
+            ctx.strokeStyle = `rgba(100, 100, 100, 0.3)`;
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+            ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+            ctx.stroke();
+        }
+
+        // Рисуем текст
+        ctx.textBaseline = 'middle';
+
+        for(let i = 0; i < captcha.length; i++) {
+            ctx.save();
+
+            const x = 25 + i * 35;
+            const y = 40 + (Math.random() * 10 - 5);
+            const rotation = (Math.random() * 0.3 - 0.15);
+
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+
+            // Случайный цвет с хорошей читаемостью
+            const hue = Math.random() * 60 + 200; // Синие оттенки
+            ctx.fillStyle = `hsl(${hue}, 70%, 30%)`;
+            ctx.font = `bold ${28 + Math.random() * 4}px Arial`;
+            ctx.fillText(captcha[i], 0, 0);
+
+            ctx.restore();
+        }
+
+        const input = document.getElementById("captchaInput");
+        const message = document.getElementById("captchaMessage");
+
+        if (input) input.value = "";
+        if (message) message.textContent = "";
+        if (input) input.focus();
+    }
+
+    function checkCaptcha() {
+        const input = document.getElementById("captchaInput");
+        const message = document.getElementById("captchaMessage");
+
+        if (!input || !message) return;
+
+        const userInput = input.value.trim().toUpperCase();
+
+        if(!userInput) {
+            message.textContent = "⚠ Введите код с картинки";
+            message.style.color = "#FFD700";
+            return;
+        }
+
+        if(userInput === captchaCode) {
+            message.textContent = "✓ Капча пройдена! Доступ разрешен.";
+            message.style.color = "#90EE90";
+
+            // Сохраняем в localStorage
+            try {
+                localStorage.setItem('captchaPassed', 'true');
+            } catch (e) {
+                console.log('LocalStorage not available');
+            }
+
+            setTimeout(() => {
+                const overlay = document.getElementById("captchaOverlay");
+                const appContainer = document.querySelector('.app-container');
+                if (overlay) overlay.style.display = "none";
+                if (appContainer) appContainer.style.display = 'block';
+            }, 1000);
+
+        } else {
+            message.textContent = "✗ Неверный код! Новая картинка.";
+            message.style.color = "#FF6B6B";
+            setTimeout(generateCaptcha, 800);
+        }
+    }
+
+    // Инициализация
+    function initCaptcha() {
+        const overlay = document.getElementById('captchaOverlay');
+        const appContainer = document.querySelector('.app-container');
+
+        if (!overlay || !appContainer) {
+            setTimeout(initCaptcha, 100);
+            return;
+        }
+
+        if (checkCaptchaStatus()) {
+            // Капча уже пройдена
+            overlay.style.display = 'none';
+            appContainer.style.display = 'block';
+        } else {
+            // Показываем капчу
+            appContainer.style.display = 'none';
+            overlay.style.display = 'flex';
+            generateCaptcha();
+
+            // Обработка Enter
+            const input = document.getElementById("captchaInput");
+            if (input) {
+                input.addEventListener("keypress", function(event) {
+                    if (event.key === "Enter") {
+                        checkCaptcha();
+                    }
+                });
+            }
+        }
+    }
+
+    // Запускаем инициализацию когда DOM готов
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCaptcha);
+    } else {
+        initCaptcha();
+    }
+
+    // Функция для сброса капчи (для тестирования)
+    window.resetCaptcha = function() {
+        try {
+            localStorage.removeItem('captchaPassed');
+        } catch (e) {}
+        location.reload();
+    }
+    </script>
+    <div class="app-container">
+        <div class="header">
+            <h1>TaskFlow</h1>
+            <div class="header-actions">
+                <button id="add-task-btn">Добавить</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div id="tasks-tab" class="tab-content active">
+                <div class="category-tags" id="category-tags">
+                    <!-- Categories will be added dynamically -->
+                </div>
+                <div class="task-list" id="task-list">
+                    <!-- Tasks will be added dynamically -->
+                </div>
+            </div>
+
+            <div id="profile-tab" class="tab-content">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profile-name">Пользователь</h2>
+                        <p>Уровень: <span id="user-level">Новичок</span></p>
+                        <p>Баллы: <span id="user-points">0</span></p>
+                    </div>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="level-progress" style="width: 0%"></div>
+                </div>
+
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-value" id="tasks-completed">0</div>
+                        <div class="stat-label">Выполнено</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="tasks-overdue">0</div>
+                        <div class="stat-label">Просрочено</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="tasks-pending">0</div>
+                        <div class="stat-label">В ожидании</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="streak-days">0</div>
+                        <div class="stat-label">Дней подряд</div>
+                    </div>
+                </div>
+
+                <div class="settings-list">
+                    <div class="settings-item" id="edit-profile-btn">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-user-edit"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Редактировать профиль</h3>
+                                <p>Изменить имя и настройки профиля</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-tab" class="tab-content">
+                <div class="settings-list">
+                    <div class="settings-item" id="theme-settings-btn">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Тема оформления</h3>
+                                <p>Выберите из различных тем</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Уведомления</h3>
+                                <p>Настройте напоминания о задачах</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="notifications-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Режим Беззаботный</h3>
+                                <p>Без начисления и снятия баллов</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="carefree-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item" id="workspace-settings-btn">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-desktop"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Рабочее пространство</h3>
+                                <p>Настройки интерфейса и отображения</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-trash"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Очистить все данные</h3>
+                                <p>Удалить все задачи и настройки</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" id="clear-data-btn">Очистить</button>
+                    </div>
+
+                    <div class="settings-item" id="about-btn">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>О приложении</h3>
+                                <p>Информация о TaskFlow</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <div class="tab-item active" data-tab="tasks-tab">
+                <div class="tab-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="tab-label">Задачи</div>
+            </div>
+            <div class="tab-item" data-tab="profile-tab">
+                <div class="tab-icon"><i class="fas fa-user"></i></div>
+                <div class="tab-label">Профиль</div>
+            </div>
+            <div class="tab-item" data-tab="settings-tab">
+                <div class="tab-icon"><i class="fas fa-cog"></i></div>
+                <div class="tab-label">Настройки</div>
+            </div>
+        </div>
+
+        <div class="cookie-notice" id="cookie-notice">
+            <div class="cookie-content">
+                <div class="cookie-text">
+                    <h3>Мы используем куки</h3>
+                    <p>Этот сайт использует файлы cookie для сохранения ваших данных и настроек.</p>
+                </div>
+                <div class="cookie-actions">
+                    <button class="btn btn-secondary" id="cookie-decline">Отклонить</button>
+                    <button class="btn btn-primary" id="cookie-accept">Принять</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="task-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Новая задача</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="task-form">
+                <div class="form-group">
+                    <label class="form-label" for="task-title">Название</label>
+                    <input type="text" id="task-title" class="form-input" required placeholder="Введите название задачи">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-description">Описание</label>
+                    <textarea id="task-description" class="form-textarea" placeholder="Добавьте описание задачи (необязательно)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-category">Категория</label>
+                    <select id="task-category" class="form-select">
+                        <option value="work">Работа</option>
+                        <option value="personal">Личное</option>
+                        <option value="health">Здоровье</option>
+                        <option value="education">Образование</option>
+                        <option value="other">Другое</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-due-date">Срок выполнения</label>
+                    <input type="datetime-local" id="task-due-date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-repeat">Повторение</label>
+                    <select id="task-repeat" class="form-select">
+                        <option value="none">Не повторять</option>
+                        <option value="daily">Каждый день</option>
+                        <option value="weekly">Каждую неделю</option>
+                        <option value="monthly">Каждый месяц</option>
+                        <option value="yearly">Каждый год</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-points">Баллы за выполнение</label>
+                    <input type="number" id="task-points" class="form-input" value="10" min="1" max="100">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить задачу</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Theme Modal -->
+    <div class="modal" id="theme-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Выбор темы</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="theme-options" id="theme-options">
+                <!-- Themes will be added dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Редактирование профиля</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="profile-form">
+                <div class="form-group">
+                    <label class="form-label" for="profile-name-input">Имя пользователя</label>
+                    <input type="text" id="profile-name-input" class="form-input" required value="Пользователь">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="profile-email">Email</label>
+                    <input type="email" id="profile-email" class="form-input" placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="profile-bio">О себе</label>
+                    <textarea id="profile-bio" class="form-textarea" placeholder="Расскажите о себе..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Workspace Modal -->
+    <div class="modal" id="workspace-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Рабочее пространство</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="workspace-settings">
+                <div class="form-group">
+                    <label class="form-label">Плотность интерфейса</label>
+                    <select id="ui-density" class="form-select">
+                        <option value="compact">Компактная</option>
+                        <option value="normal" selected>Обычная</option>
+                        <option value="comfortable">Комфортная</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Анимации</label>
+                    <select id="animations" class="form-select">
+                        <option value="full">Полные анимации</option>
+                        <option value="reduced" selected>Уменьшенные</option>
+                        <option value="none">Без анимаций</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Отображение задач</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="show-completed" checked>
+                            <span class="checkbox-custom"></span>
+                            Показывать выполненные задачи
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="show-overdue" checked>
+                            <span class="checkbox-custom"></span>
+                            Выделять просроченные задачи
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="group-by-category">
+                            <span class="checkbox-custom"></span>
+                            Группировать по категориям
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Цвет акцента</label>
+                    <div class="accent-colors">
+                        <div class="accent-color" data-color="#007AFF" style="background: #007AFF;"></div>
+                        <div class="accent-color" data-color="#34C759" style="background: #34C759;"></div>
+                        <div class="accent-color" data-color="#FF9500" style="background: #FF9500;"></div>
+                        <div class="accent-color" data-color="#FF3B30" style="background: #FF3B30;"></div>
+                        <div class="accent-color" data-color="#AF52DE" style="background: #AF52DE;"></div>
+                        <div class="accent-color" data-color="#5856D6" style="background: #5856D6;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary close-modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="save-workspace">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal" id="about-modal">
+        <div class="modal-content about-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">О приложении</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="about-container">
+                <div class="floating-title">
+                    <div class="title-text">TASK FLOW</div>
+                    <div class="version-text">1.0 BETA</div>
+                    <div class="author-text">от rggolik вместе с deepseekai</div>
+                </div>
+
+                <div class="about-grid">
+                    <div class="about-card feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h3>Современный дизайн</h3>
+                        <p>Интуитивно понятный интерфейс с плавными анимациями и темной темой</p>
+                    </div>
+
+                    <div class="about-card feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <h3>Умные задачи</h3>
+                        <p>Система повторяющихся задач, категории и приоритеты</p>
+                    </div>
+
+                    <div class="about-card feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Статистика</h3>
+                        <p>Подробная аналитика вашей продуктивности и прогресса</p>
+                    </div>
+
+                    <div class="about-card feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <h3>Кастомизация</h3>
+                        <p>Множество тем и настроек внешнего вида</p>
+                    </div>
+                </div>
+
+                <div class="tech-stack">
+                    <h3>Технологии</h3>
+                    <div class="tech-items">
+                        <span class="tech-item">HTML5</span>
+                        <span class="tech-item">CSS3</span>
+                        <span class="tech-item">JavaScript</span>
+                        <span class="tech-item">LocalStorage</span>
+                        <span class="tech-item">Service Workers</span>
+                    </div>
+                </div>
+
+                <div class="performance-stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="total-tasks">0</div>
+                        <div class="stat-label">Всего задач</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="completed-stats">0</div>
+                        <div class="stat-label">Выполнено</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="productivity">0%</div>
+                        <div class="stat-label">Продуктивность</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="index.js"></script>
+    <script src="captcha.js"></script>
+</body>
+</html>
