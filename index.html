@@ -3,59 +3,1483 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>zoldak34 - Ссылки</title>
-    <link rel="stylesheet" href="style.css">
+    <title>TaskFlow - Task Manager</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --bg-color: #F2F2F7;
+            --card-color: #FFFFFF;
+            --text-color: #000000;
+            --secondary-text: #8E8E93;
+            --border-color: #C6C6C8;
+            --success-color: #34C759;
+            --warning-color: #FF9500;
+            --danger-color: #FF3B30;
+            --tabbar-height: 83px;
+            --header-height: 88px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #0A84FF;
+            --bg-color: #000000;
+            --card-color: #1C1C1E;
+            --text-color: #FFFFFF;
+            --secondary-text: #8E8E93;
+            --border-color: #38383A;
+        }
+
+        [data-theme="blue"] {
+            --primary-color: #007AFF;
+            --bg-color: #E6F2FF;
+            --card-color: #FFFFFF;
+            --text-color: #000000;
+            --secondary-text: #5A5A5F;
+            --border-color: #C6C6C8;
+        }
+
+        [data-theme="green"] {
+            --primary-color: #34C759;
+            --bg-color: #E6F7EA;
+            --card-color: #FFFFFF;
+            --text-color: #000000;
+            --secondary-text: #5A5A5F;
+            --border-color: #C6C6C8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: var(--transition);
+            overflow-x: hidden;
+            height: 100vh;
+        }
+
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            height: var(--header-height);
+            background-color: var(--card-color);
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: var(--transition);
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-actions button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            padding-bottom: calc(var(--tabbar-height) + 15px);
+            transition: var(--transition);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .task-card {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: var(--transition);
+            animation: fadeIn 0.3s ease;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .task-card.completed {
+            opacity: 0.7;
+            border-left-color: var(--success-color);
+        }
+
+        .task-card.overdue {
+            border-left-color: var(--danger-color);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .task-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .task-description {
+            font-size: 15px;
+            color: var(--secondary-text);
+            margin-bottom: 10px;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--secondary-text);
+        }
+
+        .task-points {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .task-actions button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--tabbar-height);
+            background-color: var(--card-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            transition: var(--transition);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            color: var(--secondary-text);
+            transition: var(--transition);
+        }
+
+        .tab-item.active {
+            color: var(--primary-color);
+        }
+
+        .tab-icon {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .tab-label {
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background-color: var(--card-color);
+            width: 85%;
+            max-width: 400px;
+            border-radius: 14px;
+            padding: 20px;
+            transform: translateY(50px);
+            transition: transform 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--secondary-text);
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: var(--card-color);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), #5856D6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            margin-right: 15px;
+        }
+
+        .profile-info h2 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        .profile-info p {
+            color: var(--secondary-text);
+            margin-bottom: 5px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+
+        .settings-list {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .settings-item-content {
+            display: flex;
+            align-items: center;
+        }
+
+        .settings-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .settings-text h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .settings-text p {
+            font-size: 13px;
+            color: var(--secondary-text);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: var(--transition);
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .cookie-notice {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--card-color);
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .cookie-notice.active {
+            transform: translateY(0);
+        }
+
+        .cookie-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .cookie-text {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .cookie-text h3 {
+            margin-bottom: 5px;
+        }
+
+        .cookie-text p {
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+
+        .cookie-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--secondary-text);
+        }
+
+        .empty-state i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .language-option {
+            flex: 1;
+            padding: 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .language-option.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .category-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .category-tag {
+            padding: 6px 12px;
+            background-color: var(--bg-color);
+            border-radius: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .category-tag.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            transition: width 0.5s ease;
+        }
+
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background-color: var(--success-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .notification.error {
+            background-color: var(--danger-color);
+        }
+
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div>
-                <img src="eda90f92d34dafcd.png" class="avatar" alt="">
+    <div class="app-container">
+        <div class="header">
+            <h1 id="app-title">TaskFlow</h1>
+            <div class="header-actions">
+                <button id="add-task-btn">Добавить</button>
             </div>
-            <h1>zoldak34</h1>
-            <p class="subtitle">Стример и контент-мейкер</p>
-        </header>
-
-        <div class="content">
-            <section class="links-section">
-                <div class="links-grid">
-                    <a href="https://steamcommunity.com/id/Kare34/" class="link-card" target="_blank">
-                        <i class="fab fa-steam link-icon"></i>
-                        <span class="link-name">Steam</span>
-                    </a>
-                    <a href="https://www.youtube.com/channel/UCYJFObUdjwkChmDF5Kl95_w" class="link-card" target="_blank">
-                        <i class="fab fa-youtube link-icon"></i>
-                        <span class="link-name">YouTube</span>
-                    </a>
-                    <a href="https://www.twitch.tv/zoldak34" class="link-card" target="_blank">
-                        <i class="fab fa-twitch link-icon"></i>
-                        <span class="link-name">Twitch</span>
-                    </a>
-                    <a href="https://t.me/Zoldak344" class="link-card" target="_blank">
-                        <i class="fab fa-telegram link-icon"></i>
-                        <span class="link-name">Telegram</span>
-                    </a>
-                    <a href="https://discord.com/invite/RS94x5HvCT" class="link-card" target="_blank">
-                        <i class="fab fa-discord link-icon"></i>
-                        <span class="link-name">Discord</span>
-                    </a>
-                    <a href="https://www.donationalerts.com/r/zoldak34" class="link-card" target="_blank">
-                        <i class="fas fa-donate link-icon"></i>
-                        <span class="link-name">DonationAlerts</span>
-                    </a>
-                </div>
-            </section>
         </div>
 
-        <section class="about-section">
-            <div class="about-placeholder">
-                <h3>Обо мне</h3>
-                <p>Здесь скоро появится информация обо мне...</p>
+        <div class="main-content">
+            <div id="tasks-tab" class="tab-content active">
+                <div class="category-tags" id="category-tags">
+                    <!-- Categories will be added here -->
+                </div>
+                <div class="task-list" id="task-list">
+                    <!-- Tasks will be added here -->
+                </div>
             </div>
-        </section>
+
+            <div id="profile-tab" class="tab-content">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profile-name">Пользователь</h2>
+                        <p>Уровень: <span id="user-level">Новичок</span></p>
+                        <p>Баллы: <span id="user-points">0</span></p>
+                    </div>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="level-progress" style="width: 10%"></div>
+                </div>
+
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-value" id="tasks-completed">0</div>
+                        <div class="stat-label">Выполнено</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="tasks-overdue">0</div>
+                        <div class="stat-label">Просрочено</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="tasks-pending">0</div>
+                        <div class="stat-label">В ожидании</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="streak-days">0</div>
+                        <div class="stat-label">Дней подряд</div>
+                    </div>
+                </div>
+
+                <div class="settings-list">
+                    <div class="settings-item" id="edit-profile-btn">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-user-edit"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Редактировать профиль</h3>
+                                <p>Изменить имя и настройки профиля</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-tab" class="tab-content">
+                <div class="settings-list">
+                    <div class="settings-item" id="theme-settings-btn">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Тема оформления</h3>
+                                <p>Выберите из различных тем</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Уведомления</h3>
+                                <p>Настройте напоминания о задачах</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="notifications-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-item" id="language-settings-btn">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-language"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Язык</h3>
+                                <p>Выберите язык интерфейса</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div class="settings-text">
+                                <h3>Режим Беззаботный</h3>
+                                <p>Без начисления и снятия баллов</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="carefree-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <div class="tab-item active" data-tab="tasks-tab">
+                <div class="tab-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="tab-label">Задачи</div>
+            </div>
+            <div class="tab-item" data-tab="profile-tab">
+                <div class="tab-icon"><i class="fas fa-user"></i></div>
+                <div class="tab-label">Профиль</div>
+            </div>
+            <div class="tab-item" data-tab="settings-tab">
+                <div class="tab-icon"><i class="fas fa-cog"></i></div>
+                <div class="tab-label">Настройки</div>
+            </div>
+        </div>
+
+        <div class="cookie-notice" id="cookie-notice">
+            <div class="cookie-content">
+                <div class="cookie-text">
+                    <h3>Мы используем куки</h3>
+                    <p>Этот сайт использует файлы cookie для сохранения ваших данных и настроек.</p>
+                </div>
+                <div class="cookie-actions">
+                    <button class="btn btn-secondary" id="cookie-decline">Отклонить</button>
+                    <button class="btn btn-primary" id="cookie-accept">Принять</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Task Modal -->
+    <div class="modal" id="task-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Новая задача</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="task-form">
+                <div class="form-group">
+                    <label class="form-label" for="task-title">Название</label>
+                    <input type="text" id="task-title" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-description">Описание</label>
+                    <textarea id="task-description" class="form-textarea"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-category">Категория</label>
+                    <select id="task-category" class="form-select">
+                        <option value="work">Работа</option>
+                        <option value="personal">Личное</option>
+                        <option value="health">Здоровье</option>
+                        <option value="education">Образование</option>
+                        <option value="other">Другое</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-due-date">Срок выполнения</label>
+                    <input type="datetime-local" id="task-due-date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-repeat">Повторение</label>
+                    <select id="task-repeat" class="form-select">
+                        <option value="none">Не повторять</option>
+                        <option value="daily">Каждый день</option>
+                        <option value="weekly">Каждую неделю</option>
+                        <option value="monthly">Каждый месяц</option>
+                        <option value="yearly">Каждый год</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="task-points">Баллы за выполнение</label>
+                    <input type="number" id="task-points" class="form-input" value="10" min="1">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Theme Modal -->
+    <div class="modal" id="theme-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Выбор темы</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="theme-options" id="theme-options">
+                <!-- Themes will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Language Modal -->
+    <div class="modal" id="language-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Выбор языка</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="language-selector" id="language-selector">
+                <div class="language-option active" data-lang="ru">
+                    <div>Русский</div>
+                    <small>Russian</small>
+                </div>
+                <div class="language-option" data-lang="en">
+                    <div>English</div>
+                    <small>Английский</small>
+                </div>
+                <div class="language-option" data-lang="fr">
+                    <div>Français</div>
+                    <small>Французский</small>
+                </div>
+                <div class="language-option" data-lang="zh">
+                    <div>中文</div>
+                    <small>Китайский</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Редактирование профиля</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="profile-form">
+                <div class="form-group">
+                    <label class="form-label" for="profile-name-input">Имя пользователя</label>
+                    <input type="text" id="profile-name-input" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="profile-email">Email</label>
+                    <input type="email" id="profile-email" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="profile-bio">О себе</label>
+                    <textarea id="profile-bio" class="form-textarea" placeholder="Расскажите о себе"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // App data
+        let appData = {
+            tasks: [],
+            user: {
+                name: "Пользователь",
+                email: "",
+                bio: "",
+                points: 0,
+                level: 'Новичок',
+                carefreeMode: false,
+                theme: 'light',
+                language: 'ru'
+            },
+            settings: {
+                notifications: true,
+                cookiesAccepted: false
+            },
+            categories: [
+                { id: 'all', name: 'Все категории' },
+                { id: 'work', name: 'Работа' },
+                { id: 'personal', name: 'Личное' },
+                { id: 'health', name: 'Здоровье' },
+                { id: 'education', name: 'Образование' },
+                { id: 'other', name: 'Другое' }
+            ]
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            initUI();
+            
+            if (!appData.settings.cookiesAccepted) {
+                setTimeout(() => {
+                    document.getElementById('cookie-notice').classList.add('active');
+                }, 1000);
+            }
+            
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            
+            checkOverdueTasks();
+            updateStats();
+            renderTasks();
+            renderCategories();
+        });
+
+        function loadData() {
+            const savedData = localStorage.getItem('taskflow-data');
+            if (savedData) {
+                appData = JSON.parse(savedData);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('taskflow-data', JSON.stringify(appData));
+        }
+
+        function initUI() {
+            // Tab navigation
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Add task button
+            document.getElementById('add-task-btn').addEventListener('click', function() {
+                document.getElementById('task-modal').classList.add('active');
+            });
+            
+            // Close modals
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                });
+            });
+            
+            // Task form
+            document.getElementById('task-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addTask();
+            });
+            
+            // Cookies
+            document.getElementById('cookie-accept').addEventListener('click', function() {
+                appData.settings.cookiesAccepted = true;
+                saveData();
+                document.getElementById('cookie-notice').classList.remove('active');
+            });
+            
+            document.getElementById('cookie-decline').addEventListener('click', function() {
+                document.getElementById('cookie-notice').classList.remove('active');
+            });
+            
+            // Theme settings
+            document.getElementById('theme-settings-btn').addEventListener('click', function() {
+                openThemeSettings();
+            });
+            
+            // Language settings
+            document.getElementById('language-settings-btn').addEventListener('click', function() {
+                document.getElementById('language-modal').classList.add('active');
+                initLanguageSettings();
+            });
+            
+            // Profile editing
+            document.getElementById('edit-profile-btn').addEventListener('click', function() {
+                document.getElementById('profile-modal').classList.add('active');
+                initProfileSettings();
+            });
+            
+            // Profile form
+            document.getElementById('profile-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveProfile();
+            });
+            
+            // Toggles
+            document.getElementById('carefree-toggle').addEventListener('change', function() {
+                appData.user.carefreeMode = this.checked;
+                saveData();
+            });
+            
+            document.getElementById('notifications-toggle').addEventListener('change', function() {
+                appData.settings.notifications = this.checked;
+                saveData();
+                
+                if (this.checked && 'Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            });
+            
+            // Set current values
+            document.getElementById('carefree-toggle').checked = appData.user.carefreeMode;
+            document.getElementById('notifications-toggle').checked = appData.settings.notifications;
+            
+            // Apply theme
+            applyTheme(appData.user.theme);
+        }
+
+        function initLanguageSettings() {
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.getAttribute('data-lang') === appData.user.language) {
+                    option.classList.add('active');
+                }
+                
+                option.addEventListener('click', function() {
+                    const lang = this.getAttribute('data-lang');
+                    setLanguage(lang);
+                    document.querySelectorAll('.language-option').forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById('language-modal').classList.remove('active');
+                });
+            });
+        }
+
+        function setLanguage(lang) {
+            appData.user.language = lang;
+            saveData();
+            showNotification('Язык изменен на ' + lang);
+        }
+
+        function initProfileSettings() {
+            document.getElementById('profile-name-input').value = appData.user.name;
+            document.getElementById('profile-email').value = appData.user.email;
+            document.getElementById('profile-bio').value = appData.user.bio;
+        }
+
+        function saveProfile() {
+            appData.user.name = document.getElementById('profile-name-input').value;
+            appData.user.email = document.getElementById('profile-email').value;
+            appData.user.bio = document.getElementById('profile-bio').value;
+            
+            saveData();
+            document.getElementById('profile-name').textContent = appData.user.name;
+            document.getElementById('profile-modal').classList.remove('active');
+            
+            showNotification('Профиль успешно обновлен');
+        }
+
+        function renderCategories() {
+            const categoryTags = document.getElementById('category-tags');
+            categoryTags.innerHTML = '';
+            
+            appData.categories.forEach(category => {
+                const tag = document.createElement('div');
+                tag.className = 'category-tag';
+                if (category.id === 'all') {
+                    tag.classList.add('active');
+                }
+                tag.setAttribute('data-category', category.id);
+                tag.textContent = category.name;
+                
+                tag.addEventListener('click', function() {
+                    document.querySelectorAll('.category-tag').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    renderTasks();
+                });
+                
+                categoryTags.appendChild(tag);
+            });
+        }
+
+        // FIXED: Add task function
+        function addTask() {
+            const title = document.getElementById('task-title').value;
+            const description = document.getElementById('task-description').value;
+            const category = document.getElementById('task-category').value;
+            const dueDate = document.getElementById('task-due-date').value;
+            const repeat = document.getElementById('task-repeat').value;
+            const points = parseInt(document.getElementById('task-points').value);
+            
+            // Validate inputs
+            if (!title.trim()) {
+                showNotification('Введите название задачи', 'error');
+                return;
+            }
+            
+            if (!dueDate) {
+                showNotification('Выберите срок выполнения', 'error');
+                return;
+            }
+            
+            const newTask = {
+                id: Date.now(),
+                title: title.trim(),
+                description: description.trim(),
+                category,
+                dueDate: new Date(dueDate).getTime(),
+                repeat,
+                points,
+                completed: false,
+                overdue: false,
+                createdAt: Date.now()
+            };
+            
+            appData.tasks.push(newTask);
+            saveData();
+            renderTasks();
+            updateStats();
+            
+            // Close modal and reset form
+            document.getElementById('task-modal').classList.remove('active');
+            document.getElementById('task-form').reset();
+            
+            // Show notification
+            showNotification('Задача успешно добавлена');
+            
+            // Schedule reminder
+            scheduleReminder(newTask);
+        }
+
+        function completeTask(taskId) {
+            const task = appData.tasks.find(t => t.id === taskId);
+            if (task && !task.completed) {
+                task.completed = true;
+                
+                if (!appData.user.carefreeMode) {
+                    appData.user.points += task.points;
+                    updateUserLevel();
+                }
+                
+                if (task.repeat !== 'none') {
+                    createNextTask(task);
+                }
+                
+                saveData();
+                renderTasks();
+                updateStats();
+                
+                showNotification(`Задача выполнена! +${task.points} баллов`);
+            }
+        }
+
+        function deleteTask(taskId) {
+            appData.tasks = appData.tasks.filter(t => t.id !== taskId);
+            saveData();
+            renderTasks();
+            updateStats();
+            
+            showNotification('Задача удалена');
+        }
+
+        function createNextTask(task) {
+            let nextDueDate = new Date(task.dueDate);
+            
+            switch (task.repeat) {
+                case 'daily':
+                    nextDueDate.setDate(nextDueDate.getDate() + 1);
+                    break;
+                case 'weekly':
+                    nextDueDate.setDate(nextDueDate.getDate() + 7);
+                    break;
+                case 'monthly':
+                    nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+                    break;
+                case 'yearly':
+                    nextDueDate.setFullYear(nextDueDate.getFullYear() + 1);
+                    break;
+            }
+            
+            const newTask = {
+                ...task,
+                id: Date.now(),
+                dueDate: nextDueDate.getTime(),
+                completed: false,
+                overdue: false,
+                createdAt: Date.now()
+            };
+            
+            appData.tasks.push(newTask);
+            saveData();
+            scheduleReminder(newTask);
+        }
+
+        function checkOverdueTasks() {
+            const now = Date.now();
+            let hasChanges = false;
+            
+            appData.tasks.forEach(task => {
+                if (!task.completed && task.dueDate < now && !task.overdue) {
+                    task.overdue = true;
+                    hasChanges = true;
+                    
+                    if (!appData.user.carefreeMode) {
+                        const penalty = Math.floor(task.points / 2);
+                        appData.user.points = Math.max(0, appData.user.points - penalty);
+                        updateUserLevel();
+                        
+                        if (penalty > 0) {
+                            showNotification(`Задача просрочена! -${penalty} баллов`, 'warning');
+                        }
+                    }
+                }
+            });
+            
+            if (hasChanges) {
+                saveData();
+                renderTasks();
+                updateStats();
+            }
+        }
+
+        function updateUserLevel() {
+            const points = appData.user.points;
+            
+            if (points < 100) {
+                appData.user.level = 'Новичок';
+                document.getElementById('level-progress').style.width = `${(points / 100) * 100}%`;
+            } else if (points < 500) {
+                appData.user.level = 'Любитель';
+                document.getElementById('level-progress').style.width = `${((points - 100) / 400) * 100}%`;
+            } else if (points < 1000) {
+                appData.user.level = 'Опытный';
+                document.getElementById('level-progress').style.width = `${((points - 500) / 500) * 100}%`;
+            } else if (points < 2000) {
+                appData.user.level = 'Эксперт';
+                document.getElementById('level-progress').style.width = `${((points - 1000) / 1000) * 100}%`;
+            } else {
+                appData.user.level = 'Мастер';
+                document.getElementById('level-progress').style.width = '100%';
+            }
+            
+            document.getElementById('user-level').textContent = appData.user.level;
+            document.getElementById('user-points').textContent = appData.user.points;
+        }
+
+        function scheduleReminder(task) {
+            const reminderTime = task.dueDate - (60 * 60 * 1000);
+            const now = Date.now();
+            
+            if (reminderTime > now && appData.settings.notifications) {
+                setTimeout(() => {
+                    if (!task.completed && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification('TaskFlow', {
+                            body: `Остался 1 час до выполнения задачи: "${task.title}"`,
+                            icon: '/favicon.ico'
+                        });
+                    }
+                }, reminderTime - now);
+            }
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            
+            const activeCategory = document.querySelector('.category-tag.active').getAttribute('data-category');
+            
+            let filteredTasks = appData.tasks;
+            if (activeCategory !== 'all') {
+                filteredTasks = appData.tasks.filter(task => task.category === activeCategory);
+            }
+            
+            if (filteredTasks.length === 0) {
+                taskList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Нет задач</h3>
+                        <p>Добавьте свою первую задачу</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedTasks = [...filteredTasks].sort((a, b) => {
+                if (a.completed && !b.completed) return 1;
+                if (!a.completed && b.completed) return -1;
+                return a.dueDate - b.dueDate;
+            });
+            
+            sortedTasks.forEach(task => {
+                const taskElement = document.createElement('div');
+                taskElement.className = `task-card ${task.completed ? 'completed' : ''} ${task.overdue ? 'overdue' : ''}`;
+                
+                const dueDate = new Date(task.dueDate);
+                const now = new Date();
+                const timeDiff = dueDate - now;
+                const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60));
+                
+                let timeText = '';
+                if (task.completed) {
+                    timeText = 'Выполнено';
+                } else if (task.overdue) {
+                    timeText = 'Просрочено';
+                } else if (hoursLeft < 24) {
+                    timeText = `Осталось: ${hoursLeft} ч`;
+                } else {
+                    timeText = dueDate.toLocaleDateString('ru-RU');
+                }
+                
+                taskElement.innerHTML = `
+                    <div class="task-header">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-points">+${task.points}</div>
+                    </div>
+                    <div class="task-description">${task.description || 'Нет описания'}</div>
+                    <div class="task-meta">
+                        <div>${timeText}</div>
+                        <div class="task-actions">
+                            ${!task.completed ? `<button onclick="completeTask(${task.id})"><i class="fas fa-check"></i></button>` : ''}
+                            <button onclick="deleteTask(${task.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                
+                taskList.appendChild(taskElement);
+            });
+        }
+
+        function updateStats() {
+            const completed = appData.tasks.filter(t => t.completed).length;
+            const overdue = appData.tasks.filter(t => t.overdue && !t.completed).length;
+            const pending = appData.tasks.filter(t => !t.completed && !t.overdue).length;
+            
+            document.getElementById('tasks-completed').textContent = completed;
+            document.getElementById('tasks-overdue').textContent = overdue;
+            document.getElementById('tasks-pending').textContent = pending;
+            document.getElementById('user-points').textContent = appData.user.points;
+            document.getElementById('user-level').textContent = appData.user.level;
+            
+            const today = new Date().toDateString();
+            const lastCompletion = localStorage.getItem('lastCompletion');
+            
+            if (lastCompletion === today) {
+                document.getElementById('streak-days').textContent = parseInt(localStorage.getItem('streakDays') || '0');
+            } else {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                if (lastCompletion === yesterday.toDateString()) {
+                    const newStreak = parseInt(localStorage.getItem('streakDays') || '0') + 1;
+                    localStorage.setItem('streakDays', newStreak.toString());
+                    document.getElementById('streak-days').textContent = newStreak;
+                } else {
+                    localStorage.setItem('streakDays', '1');
+                    document.getElementById('streak-days').textContent = 1;
+                }
+                
+                localStorage.setItem('lastCompletion', today);
+            }
+            
+            updateUserLevel();
+        }
+
+        function openThemeSettings() {
+            const themeOptions = document.getElementById('theme-options');
+            themeOptions.innerHTML = '';
+            
+            const themes = [
+                { name: 'light', color: '#F2F2F7', text: 'Светлая' },
+                { name: 'dark', color: '#000000', text: 'Тёмная' },
+                { name: 'blue', color: '#E6F2FF', text: 'Синяя' },
+                { name: 'green', color: '#E6F7EA', text: 'Зелёная' }
+            ];
+            
+            themes.forEach(theme => {
+                const themeOption = document.createElement('div');
+                themeOption.className = `theme-option ${appData.user.theme === theme.name ? 'active' : ''}`;
+                themeOption.style.backgroundColor = theme.color;
+                themeOption.setAttribute('data-theme', theme.name);
+                themeOption.setAttribute('title', theme.text);
+                
+                themeOption.addEventListener('click', function() {
+                    applyTheme(theme.name);
+                    document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    showNotification('Тема применена');
+                });
+                
+                themeOptions.appendChild(themeOption);
+            });
+            
+            document.getElementById('theme-modal').classList.add('active');
+        }
+
+        function applyTheme(themeName) {
+            appData.user.theme = themeName;
+            saveData();
+            document.documentElement.setAttribute('data-theme', themeName);
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
